@@ -15,23 +15,35 @@
  */
 package com.android.internal.util.evolution;
 
+import android.app.Application;
 import android.os.Build;
+import android.os.SystemProperties;
 import android.util.Log;
 
-import java.util.Arrays;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 public class PixelPropsUtils {
 
+    public static final String PACKAGE_GMS = "com.google.android.gms";
+    public static final String PACKAGE_SETTINGS_SERVICES = "com.google.android.settings.intelligence";
+
     private static final String TAG = PixelPropsUtils.class.getSimpleName();
     private static final boolean DEBUG = false;
 
-    private static final Map<String, Object> propsToChangePixelXL;
-    private static final Map<String, Object> propsToChangePixel5;
+    private static final Map<String, Object> propsToChange;
     private static final Map<String, Object> propsToChangePixel6Pro;
-    private static final Map<String, Object> propsToChangeOnePlus9Pro;
+    private static final Map<String, Object> propsToChangePixel5;
+    private static final Map<String, Object> propsToChangePixelXL;
+    private static final Map<String, ArrayList<String>> propsToKeep;
+
+    private static final String[] packagesToChangePixel6Pro = {
+            PACKAGE_GMS
+    };
 
     private static final String[] packagesToChangePixelXL = {
             "com.google.android.apps.photos",
@@ -47,55 +59,40 @@ public class PixelPropsUtils {
             "com.samsung.android.waterplugin"
     };
 
-    private static final String[] packagesToChangePixel5 = {
-            "com.google.android.googlequicksearchbox"
-    };
-
-    private static final String[] packagesToChangePixel6Pro = {
+    private static final String[] extraPackagesToChange = {
             "com.android.chrome",
             "com.breel.wallpapers20",
-            "com.google.android.apps.customization.pixel",
-            "com.google.android.apps.googleassistant",
-            "com.google.android.apps.maps",
-            "com.google.android.apps.messaging",
-            "com.google.android.apps.nbu.files",
-            "com.google.android.apps.podcasts",
-            "com.google.android.apps.safetyhub",
-            "com.google.android.apps.subscriptions.red",
-            "com.google.android.apps.turbo",
-            "com.google.android.apps.turboadapter",
-            "com.google.android.apps.wallpaper",
-            "com.google.android.apps.wallpaper.pixel",
-            "com.google.android.apps.youtube.music",
-            "com.google.android.as",
-            "com.google.android.contacts",
-            "com.google.android.deskclock",
-            "com.google.android.gms",
-            "com.google.android.gms.location.history",
-            "com.google.android.inputmethod.latin",
-            "com.google.pixel.dynamicwallpapers",
-            "com.google.pixel.livewallpaper"
+            "com.nhs.online.nhsonline"
     };
 
-    private static final String[] packagesToChangeOnePlus9Pro = {
-            "com.google.android.apps.wearables.maestro.companion"
+    private static final String[] packagesToKeep = {
+            "com.google.android.GoogleCamera",
+            "com.google.android.GoogleCamera.Cameight",
+            "com.google.android.GoogleCamera.Go",
+            "com.google.android.GoogleCamera.Urnyx",
+            "com.google.android.GoogleCameraAsp",
+            "com.google.android.GoogleCameraCVM",
+            "com.google.android.GoogleCameraEng",
+            "com.google.android.GoogleCameraEng2",
+            "com.google.android.GoogleCameraGood",
+            "com.google.android.MTCL83",
+            "com.google.android.UltraCVM",
+            "com.google.android.apps.cameralite",
+            "com.google.android.apps.recorder",
+            "com.google.android.apps.wearables.maestro.companion",
+            "com.google.android.apps.youtube.kids",
+            "com.google.android.apps.youtube.music",
+            "com.google.android.dialer",
+            "com.google.android.youtube",
+            "com.google.ar.core"
     };
+
+    private static volatile boolean sIsGms = false;
 
     static {
-        propsToChangePixelXL = new HashMap<>();
-        propsToChangePixelXL.put("BRAND", "google");
-        propsToChangePixelXL.put("MANUFACTURER", "Google");
-        propsToChangePixelXL.put("DEVICE", "marlin");
-        propsToChangePixelXL.put("PRODUCT", "marlin");
-        propsToChangePixelXL.put("MODEL", "Pixel XL");
-        propsToChangePixelXL.put("FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys");
-        propsToChangePixel5 = new HashMap<>();
-        propsToChangePixel5.put("BRAND", "google");
-        propsToChangePixel5.put("MANUFACTURER", "Google");
-        propsToChangePixel5.put("DEVICE", "redfin");
-        propsToChangePixel5.put("PRODUCT", "redfin");
-        propsToChangePixel5.put("MODEL", "Pixel 5");
-        propsToChangePixel5.put("FINGERPRINT", "google/redfin/redfin:12/SQ3A.220605.009.A1/8643238:user/release-keys");
+        propsToKeep = new HashMap<>();
+        propsToKeep.put(PACKAGE_SETTINGS_SERVICES, new ArrayList<>(Collections.singletonList("FINGERPRINT")));
+        propsToChange = new HashMap<>();
         propsToChangePixel6Pro = new HashMap<>();
         propsToChangePixel6Pro.put("BRAND", "google");
         propsToChangePixel6Pro.put("MANUFACTURER", "Google");
@@ -103,70 +100,77 @@ public class PixelPropsUtils {
         propsToChangePixel6Pro.put("PRODUCT", "raven");
         propsToChangePixel6Pro.put("MODEL", "Pixel 6 Pro");
         propsToChangePixel6Pro.put("FINGERPRINT", "google/raven/raven:12/SQ3A.220605.009.B1/8650216:user/release-keys");
-        propsToChangeOnePlus9Pro = new HashMap<>();
-        propsToChangeOnePlus9Pro.put("BRAND", "OnePlus");
-        propsToChangeOnePlus9Pro.put("MANUFACTURER", "OnePlus");
-        propsToChangeOnePlus9Pro.put("DEVICE", "OnePlus9Pro");
-        propsToChangeOnePlus9Pro.put("PRODUCT", "OnePlus9Pro_EEA");
-        propsToChangeOnePlus9Pro.put("MODEL", "LE2123");
-        propsToChangeOnePlus9Pro.put("FINGERPRINT", "OnePlus/OnePlus9Pro_EEA/OnePlus9Pro:11/RKQ1.201105.002/2107082109:user/release-keys");
+        propsToChangePixel5 = new HashMap<>();
+        propsToChangePixel5.put("BRAND", "google");
+        propsToChangePixel5.put("MANUFACTURER", "Google");
+        propsToChangePixel5.put("DEVICE", "redfin");
+        propsToChangePixel5.put("PRODUCT", "redfin");
+        propsToChangePixel5.put("MODEL", "Pixel 5");
+        propsToChangePixel5.put("FINGERPRINT", "google/redfin/redfin:12/SQ3A.220605.009.A1/8643238:user/release-keys");
+        propsToChangePixelXL = new HashMap<>();
+        propsToChangePixelXL.put("BRAND", "google");
+        propsToChangePixelXL.put("MANUFACTURER", "Google");
+        propsToChangePixelXL.put("DEVICE", "marlin");
+        propsToChangePixelXL.put("PRODUCT", "marlin");
+        propsToChangePixelXL.put("MODEL", "Pixel XL");
+        propsToChangePixelXL.put("FINGERPRINT", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys");
     }
 
-    public static void setProps(String packageName) {
-        if (packageName == null){
+    public static void setProps(Application app) {
+        final String packageName = app.getPackageName();
+        final String processName = app.getProcessName();
+
+        if (packageName == null) {
             return;
         }
-        if (Arrays.asList(packagesToChangePixelXL).contains(packageName)){
-            if (DEBUG){
-                Log.d(TAG, "Defining props for: " + packageName);
+        if (Arrays.asList(packagesToKeep).contains(packageName)) {
+            return;
+        }
+        if (packageName.startsWith("com.google.")
+                || Arrays.asList(extraPackagesToChange).contains(packageName)) {
+
+            if (packageName.equals("com.google.android.apps.photos")) {
+                if (SystemProperties.getBoolean("persist.sys.pixelprops.gphotos", true)) {
+                    propsToChange.putAll(propsToChangePixelXL);
+                } else {
+                    propsToChange.putAll(propsToChangePixel5);
+                }
+            } else {
+                if ((Arrays.asList(packagesToChangePixel6Pro).contains(packageName))
+                        || Arrays.asList(extraPackagesToChange).contains(packageName)) {
+                    propsToChange.putAll(propsToChangePixel6Pro);
+                } else if (Arrays.asList(packagesToChangePixelXL).contains(packageName)) {
+                    propsToChange.putAll(propsToChangePixelXL);
+                } else {
+                    propsToChange.putAll(propsToChangePixel5);
+                }
             }
-            for (Map.Entry<String, Object> prop : propsToChangePixelXL.entrySet()) {
+
+            if (DEBUG) Log.d(TAG, "Defining props for: " + packageName);
+            for (Map.Entry<String, Object> prop : propsToChange.entrySet()) {
                 String key = prop.getKey();
                 Object value = prop.getValue();
+                if (propsToKeep.containsKey(packageName) && propsToKeep.get(packageName).contains(key)) {
+                    if (DEBUG) Log.d(TAG, "Not defining " + key + " prop for: " + packageName);
+                    continue;
+                }
+                if (DEBUG) Log.d(TAG, "Defining " + key + " prop for: " + packageName);
                 setPropValue(key, value);
             }
-        }
-        if (Arrays.asList(packagesToChangePixel5).contains(packageName)){
-            if (DEBUG){
-                Log.d(TAG, "Defining props for: " + packageName);
+            if (packageName.equals(PACKAGE_GMS) &&
+                    processName.equals(PACKAGE_GMS + ".unstable")) {
+                sIsGms = true;
             }
-            for (Map.Entry<String, Object> prop : propsToChangePixel5.entrySet()) {
-                String key = prop.getKey();
-                Object value = prop.getValue();
-                setPropValue(key, value);
+            // Set proper indexing fingerprint
+            if (packageName.equals(PACKAGE_SETTINGS_SERVICES)) {
+                setPropValue("FINGERPRINT", Build.EVOLUTION_FINGERPRINT);
             }
-        }
-        if (Arrays.asList(packagesToChangePixel6Pro).contains(packageName)){
-            if (DEBUG){
-                Log.d(TAG, "Defining props for: " + packageName);
-            }
-            for (Map.Entry<String, Object> prop : propsToChangePixel6Pro.entrySet()) {
-                String key = prop.getKey();
-                Object value = prop.getValue();
-                setPropValue(key, value);
-            }
-        }
-        if (Arrays.asList(packagesToChangeOnePlus9Pro).contains(packageName)){
-            if (DEBUG){
-                Log.d(TAG, "Defining props for: " + packageName);
-            }
-            for (Map.Entry<String, Object> prop : propsToChangeOnePlus9Pro.entrySet()) {
-                String key = prop.getKey();
-                Object value = prop.getValue();
-                setPropValue(key, value);
-            }
-        }
-        // Set proper indexing fingerprint
-        if (packageName.equals("com.google.android.settings.intelligence")){
-            setPropValue("FINGERPRINT", Build.EVOLUTION_FINGERPRINT);
         }
     }
 
-    private static void setPropValue(String key, Object value){
+    private static void setPropValue(String key, Object value) {
         try {
-            if (DEBUG){
-                Log.d(TAG, "Defining prop " + key + " to " + value.toString());
-            }
+            if (DEBUG) Log.d(TAG, "Defining prop " + key + " to " + value.toString());
             Field field = Build.class.getDeclaredField(key);
             field.setAccessible(true);
             field.set(null, value);

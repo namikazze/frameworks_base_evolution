@@ -1166,7 +1166,7 @@ public class Instrumentation {
                 .instantiateApplication(cl, className);
         app.attach(context);
         String packageName = app.getPackageName();
-        PixelPropsUtils.setProps(packageName);
+        PixelPropsUtils.setProps(app);
         if (SystemProperties.getBoolean(EXTHM_STATUS_BAR_LYRIC_PROP, false)) {
             ResetPropsUtils.setProps(packageName);
         }
@@ -1188,7 +1188,7 @@ public class Instrumentation {
         Application app = (Application)clazz.newInstance();
         app.attach(context);
         String packageName = app.getPackageName();
-        PixelPropsUtils.setProps(packageName);
+        PixelPropsUtils.setProps(app);
         if (SystemProperties.getBoolean(EXTHM_STATUS_BAR_LYRIC_PROP, false)) {
             ResetPropsUtils.setProps(packageName);
         }
